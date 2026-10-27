@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Usuarios — DevProject Manager{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4"><h1 class="h3 mb-0">Administración de usuarios</h1></div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm"><div class="card-body p-4">
+      <h2 class="h5 mb-3">Registrar usuario</h2>
+      <form method="post" action="{{ url_for('users.create') }}">
+        {{ form.hidden_tag() }}
+        {% for field in [form.full_name, form.email, form.password] %}
+        <div class="mb-3"><label class="form-label" for="{{ field.id }}">{{ field.label }}</label>{{ field(class="form-control", **({'autocomplete':'new-password'} if field.name=='password' else {})) }}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>
+        {% endfor %}
+        <div class="mb-3"><label class="form-label" for="role">{{ form.role.label }}</label>{{ form.role(class="form-select") }}</div>
+        <div class="form-check mb-3">{{ form.is_active(class="form-check-input") }}<label class="form-check-label" for="is_active">Usuario activo</label></div>
+        {{ form.submit(class="btn btn-primary w-100") }}
+      </form>
+    </div></div>
+  </div>
+  <div class="col-lg-8"><div class="card border-0 shadow-sm overflow-hidden"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Creado</th><th></th></tr></thead><tbody>
+  {% for user in users %}<tr><td>{{ user.full_name }}</td><td>{{ user.email }}</td><td>{{ {'admin':'Administrador','developer':'Desarrollador','client':'Cliente'}[user.role] }}</td><td>{% if user.is_active %}<span class="badge text-bg-success">Activo</span>{% else %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}</td><td>{{ user.created_at.strftime('%d/%m/%Y') }}</td><td><form method="post" action="{{ url_for('users.toggle_active', user_id=user.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm {{ 'btn-outline-secondary' if user.is_active else 'btn-outline-success' }}" type="submit">{{ 'Desactivar' if user.is_active else 'Activar' }}</button></form></td></tr>{% else %}<tr><td colspan="6" class="text-center text-secondary py-4">No hay usuarios registrados.</td></tr>{% endfor %}
+  </tbody></table></div></div></div>
+</div>
+{% endblock %}

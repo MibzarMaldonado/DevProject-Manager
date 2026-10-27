@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Iniciar sesión — DevProject Manager{% endblock %}
+{% block content %}
+<div class="row justify-content-center align-items-center login-shell">
+  <div class="col-md-6 col-lg-4">
+    <div class="text-center mb-4"><h1 class="h3">DevProject Manager</h1><p class="text-secondary">Accede a tu espacio de trabajo</p></div>
+    <div class="card border-0 shadow-sm"><div class="card-body p-4">
+      <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="mb-3"><label class="form-label" for="email">{{ form.email.label }}</label>{{ form.email(class="form-control", autocomplete="email", placeholder="nombre@ejemplo.com") }}{% for error in form.email.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>
+        <div class="mb-4"><label class="form-label" for="password">{{ form.password.label }}</label>{{ form.password(class="form-control", autocomplete="current-password") }}{% for error in form.password.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>
+        {{ form.submit(class="btn btn-primary w-100") }}
+      </form>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

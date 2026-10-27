@@ -1,0 +1,92 @@
+DEVPROJECT MANAGER — ESPECIFICACIÓN DE REQUERIMIENTOS
+Primera entrega funcional
+
+1. OBJETIVO
+Implementar una base web modular para autenticación y administración de usuarios. Esta entrega permite iniciar y cerrar sesión, consultar un panel privado y administrar usuarios sin implementar aún proyectos, fases, tareas, riesgos o reportes.
+
+2. TECNOLOGÍAS
+Implementadas: Python 3, Flask, SQLite, Flask-SQLAlchemy, Flask-Login, Flask-WTF, WTForms, Werkzeug, Jinja2, Bootstrap 5 y pytest. La arquitectura se organiza en aplicación, extensiones, modelo, blueprints de autenticación y usuarios, plantillas, recursos estáticos y pruebas.
+
+3. REQUERIMIENTOS FUNCIONALES IMPLEMENTADOS
+RF-01. La aplicación muestra un formulario de inicio de sesión con correo y contraseña.
+RF-02. Un usuario activo puede iniciar sesión y llegar al panel principal.
+RF-03. Un usuario autenticado puede cerrar sesión y la sesión queda invalidada.
+RF-04. Las páginas privadas requieren autenticación.
+RF-05. El panel muestra nombre y rol del usuario.
+RF-06. Un administrador puede consultar todos los usuarios registrados.
+RF-07. Un administrador puede crear usuarios con nombre, correo normalizado, contraseña, rol y estado.
+RF-08. Un administrador puede activar o desactivar un usuario.
+RF-09. El sistema impide correos duplicados en aplicación y base de datos.
+RF-10. El primer administrador se crea mediante el comando Flask init-admin.
+RF-11. Los mensajes de éxito, error y permiso son visibles y comprensibles.
+RF-12. Los módulos futuros se señalan en el panel sin estar implementados.
+
+4. REQUERIMIENTOS NO FUNCIONALES
+RN-01. Código modular y preparado para nuevos blueprints de proyectos y dominios futuros.
+RN-02. Interfaz responsive basada en Bootstrap 5.
+RN-03. Pruebas automatizadas aisladas en SQLite temporal en memoria.
+RN-04. Aplicación configurable mediante variables de entorno y configuración local opcional.
+RN-05. Uso de comentarios, nombres y mensajes claros sin registrar secretos o contraseñas.
+
+5. ROLES Y PERMISOS
+- admin: puede listar, crear y activar/desactivar usuarios.
+- developer: puede iniciar sesión y acceder al panel privado.
+- client: puede iniciar sesión y acceder al panel privado.
+El rol se valida en el servidor. Ocultar botones no sustituye la autorización; las rutas de administración usan roles_required. Los usuarios no autenticados reciben redirección al login y los usuarios autenticados sin permiso reciben 403.
+
+6. VALIDACIONES
+- Nombre completo obligatorio y limitado a 120 caracteres.
+- Correo obligatorio, formato válido y longitud máxima de 255.
+- Correo guardado en minúsculas y sin espacios externos.
+- Contraseña obligatoria de al menos 12 caracteres.
+- Contraseña fuerte que combine al menos tres tipos: minúscula, mayúscula, dígito y símbolo.
+- Rol limitado a admin, developer o client mediante formulario y restricción CHECK de SQLite.
+- Estado activo/inactivo como booleano.
+- Las contraseñas no se devuelven ni se muestran en la interfaz.
+
+7. SEGURIDAD
+S-01. SECRET_KEY proviene de una variable de entorno y no tiene valor predeterminado fijo.
+S-02. La aplicación falla claramente si inicia sin SECRET_KEY configurada.
+S-03. Las contraseñas se generan con hashes seguros de Werkzeug y nunca se guardan en texto plano.
+S-04. Los formularios POST usan Flask-WTF/CSRF.
+S-05. Flask-Login protege las rutas privadas y restaura únicamente sesiones válidas.
+S-06. Los inactivos no pueden iniciar sesión ni mantener una sesión efectiva.
+S-07. Los fallos de autenticación no distinguen correo correcto de contraseña correcta.
+S-08. La URL next se acepta solo si permanece en el mismo host.
+S-09. Las cookies tienen HttpOnly y SameSite=Lax; Secure se activa mediante COOKIE_SECURE=true en HTTPS.
+S-10. No existe registro público de usuarios ni creación pública de administradores.
+S-11. init-admin crea el primer administrador de manera interactiva y segura.
+S-12. init-admin verifica la existencia previa de administradores y falla sin modificar datos.
+S-13. Los errores 403, 404 y 500 tienen plantillas propias.
+
+8. MODELO DE DATOS
+User contiene id, full_name, email único normalizado, password_hash, role, is_active y created_at. Email tiene restricción única e índice; role tiene restricción CHECK. Se conserva created_at sin exponer password_hash.
+
+9. CASOS DE PRUEBA Y CRITERIOS DE ACEPTACIÓN
+PA-01. GET /login responde 200 e incluye el nombre de la aplicación.
+PA-02. / sin sesión redirige a /login.
+PA-03. Credenciales válidas permiten entrar al panel y mostrar el usuario.
+PA-04. Contraseña incorrecta rechaza el login con mensaje genérico.
+PA-05. Usuario inactivo no obtiene sesión.
+PA-06. POST de logout elimina la sesión; el acceso privado posterior redirige al login.
+PA-07. Un administrador obtiene 200 en /users/.
+PA-08. Un administrador registra un usuario y el registro normalizado queda persistido.
+PA-09. Correo duplicado devuelve error y no crea un segundo usuario.
+PA-10. Contraseña débil devuelve error sin guardar al usuario.
+PA-11. Un no administrador recibe 403 al abrir administración.
+PA-12. Un POST sin CSRF recibe 400.
+PA-13. password_hash es distinto de la contraseña y verifica con la contraseña original.
+El mecanismo init-admin se prueba en una base aislada: crea el primer administrador con hash seguro y rechaza una segunda ejecución sin modificar usuarios. El criterio global es que todos los tests pasen, que los recursos sensibles estén excluidos y que app.create_app() pueda iniciar con configuración válida.
+
+10. REQUERIMIENTOS DE INSTALACIÓN
+Se requiere Python 3.10+, SQLite incluido con Python y dependencias de requirements.txt. En Windows: crear y activar .venv, instalar requirements.txt, configurar SECRET_KEY y DATABASE_URL, crear tablas con init-admin, iniciar run.py y ejecutar pytest. No deben versionarse el entorno virtual, .env, instance ni bases locales.
+
+11. COMANDO DE INICIALIZACIÓN
+python -m flask --app run.py init-admin
+
+El comando solicita nombre, correo y contraseña sin mostrarla. Valida formato y fortaleza, impide duplicados y falla si ya existe un administrador. Es el único flujo automático previsto para crear el primer administrador.
+
+Para recuperar una cuenta administrativa ya creada se dispone de reset-admin-password. El comando local consulta únicamente administradores activos, exige seleccionar por correo exacto y confirmación explícita, solicita la contraseña oculta dos veces y valida la política vigente. Solo reemplaza password_hash mediante User.set_password(); no crea ni elimina usuarios, no cambia roles ni activa cuentas inactivas. Se almacena el hash de Werkzeug usado por el modelo, sin exponer ni descifrar contraseñas.
+
+12. PENDIENTES PARA SIGUIENTES HITOS
+No implementados: gestión de proyectos, fases, tareas, riesgos, miembros y reportes; edición completa de perfil y usuario; flujo de recuperación de contraseñas; roles personalizados; invitaciones por correo; auditoría detallada; notificaciones; exportaciones; paginación avanzada y despliegue con servidor WSGI. Se recomienda agregar cada dominio como blueprints o módulos independientes sin modificar el núcleo de autenticación.

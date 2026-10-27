@@ -1,0 +1,5 @@
+:root { --bs-primary: #5b5bd6; }
+body { min-height: 100vh; }
+.login-shell { min-height: 75vh; }
+.card { border-radius: .85rem; }
+.table td, .table th { white-space: nowrap; }

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Panel — DevProject Manager{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+  <div><h1 class="h3 mb-1">Bienvenido, {{ current_user.full_name }}</h1><p class="text-secondary mb-0">Rol: <strong>{{ {'admin':'Administrador','developer':'Desarrollador','client':'Cliente'}[current_user.role] }}</strong></p></div>
+  {% if current_user.role == 'admin' %}<a class="btn btn-primary" href="{{ url_for('users.index') }}">Administrar usuarios</a>{% endif %}
+</div>
+<div class="card border-0 shadow-sm"><div class="card-body p-4">
+  <h2 class="h5">Estado del proyecto</h2>
+  <p class="text-secondary mb-0">Los módulos de proyectos, fases, tareas, riesgos y reportes se incorporarán en entregas posteriores.</p>
+</div></div>
+{% endblock %}
