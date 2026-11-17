@@ -3,10 +3,13 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
   <div><h1 class="h3 mb-1">Bienvenido, {{ current_user.full_name }}</h1><p class="text-secondary mb-0">Rol: <strong>{{ {'admin':'Administrador','developer':'Desarrollador','client':'Cliente'}[current_user.role] }}</strong></p></div>
-  {% if current_user.role == 'admin' %}<a class="btn btn-primary" href="{{ url_for('users.index') }}">Administrar usuarios</a>{% endif %}
+  <div class="d-flex gap-2">
+    {% if current_user.role == 'admin' %}<a class="btn btn-outline-primary" href="{{ url_for('users.index') }}">Administrar usuarios</a><a class="btn btn-primary" href="{{ url_for('projects.create') }}">Nuevo proyecto</a>{% endif %}
+    <a class="btn btn-outline-primary" href="{{ url_for('projects.index') }}">Ver proyectos</a>
+  </div>
 </div>
 <div class="card border-0 shadow-sm"><div class="card-body p-4">
-  <h2 class="h5">Estado del proyecto</h2>
-  <p class="text-secondary mb-0">Los módulos de proyectos, fases, tareas, riesgos y reportes se incorporarán en entregas posteriores.</p>
+  <h2 class="h5">Gestión de proyectos</h2>
+  <p class="text-secondary mb-0">Administra el portafolio, el trabajo del equipo y el seguimiento de entregables desde un solo lugar.</p>
 </div></div>
 {% endblock %}

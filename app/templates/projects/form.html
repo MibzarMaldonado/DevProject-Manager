@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ heading }} — DevProject Manager{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-8">
+  <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3">{{ heading }}</h1><a class="btn btn-outline-secondary" href="{{ url_for('projects.index') }}">Volver</a></div>
+  <div class="card border-0 shadow-sm"><div class="card-body p-4">
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="mb-3"><label class="form-label">{{ form.name.label }}</label>{{ form.name(class="form-control") }}{% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+      <div class="mb-3"><label class="form-label">{{ form.description.label }}</label>{{ form.description(class="form-control", rows=3) }}</div>
+      <div class="mb-3"><label class="form-label">{{ form.objectives.label }}</label>{{ form.objectives(class="form-control", rows=3) }}</div>
+      <div class="row"><div class="col-md-6 mb-3"><label class="form-label">{{ form.start_date.label }}</label>{{ form.start_date(class="form-control", type="date") }}{% for error in form.start_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+      <div class="col-md-6 mb-3"><label class="form-label">{{ form.end_date.label }}</label>{{ form.end_date(class="form-control", type="date") }}{% for error in form.end_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div></div>
+      <div class="row"><div class="col-md-6 mb-3"><label class="form-label">{{ form.base_budget.label }}</label>{{ form.base_budget(class="form-control", min="0", step="0.01") }}{% for error in form.base_budget.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+      <div class="col-md-6 mb-3"><label class="form-label">{{ form.status.label }}</label>{{ form.status(class="form-select") }}</div></div>
+      {{ form.submit(class="btn btn-primary") }}
+    </form>
+  </div></div>
+</div></div>
+{% endblock %}

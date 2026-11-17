@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.name }} — DevProject Manager{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div><a class="small text-decoration-none" href="{{ url_for('projects.index') }}">← Proyectos</a><h1 class="h3 mt-2 mb-1">{{ project.name }}</h1><span class="badge text-bg-secondary">{{ {'planning':'En planificación','active':'Activo','paused':'Pausado','finished':'Finalizado'}[project.status] }}</span></div>
+  {% if can_manage %}<div class="d-flex gap-2"><a class="btn btn-outline-primary" href="{{ url_for('projects.edit', project_id=project.id) }}">Editar proyecto</a><form method="post" action="{{ url_for('projects.delete', project_id=project.id) }}" onsubmit="return confirm('¿Eliminar este proyecto y sus fases?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-danger">Eliminar</button></form></div>{% endif %}
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-lg-8"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+    <h2 class="h5">Resumen</h2><p>{{ project.description or 'Sin descripción.' }}</p><h3 class="h6">Objetivos</h3><p class="mb-0">{{ project.objectives or 'Sin objetivos registrados.' }}</p>
+  </div></div></div>
+  <div class="col-lg-4"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+    <h2 class="h5">Datos del proyecto</h2><p class="mb-1"><strong>Inicio:</strong> {{ project.start_date.strftime('%d/%m/%Y') }}</p><p class="mb-1"><strong>Fin estimado:</strong> {{ project.end_date.strftime('%d/%m/%Y') }}</p><p class="mb-0"><strong>Presupuesto:</strong> ${{ '%.2f'|format(project.base_budget) }}</p>
+  </div></div></div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-7"><div class="card border-0 shadow-sm"><div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h5 mb-0">Fases / EDT</h2></div>
+    <ol class="list-group list-group-numbered">
+      {% for phase in project.phases %}<li class="list-group-item d-flex justify-content-between align-items-start"><div class="ms-2 me-auto"><div class="fw-semibold">{{ phase.name }}</div><div class="small text-secondary">{{ phase.description or 'Sin descripción.' }}{% if phase.start_date or phase.end_date %}<br>{{ phase.start_date.strftime('%d/%m/%Y') if phase.start_date else 'Sin inicio' }} – {{ phase.end_date.strftime('%d/%m/%Y') if phase.end_date else 'Sin fecha final' }}{% endif %}</div></div>{% if can_manage %}<form method="post" action="{{ url_for('projects.delete_phase', project_id=project.id, phase_id=phase.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" aria-label="Eliminar fase">Eliminar</button></form>{% endif %}</li>
+      {% else %}<li class="list-group-item text-secondary">Todavía no hay fases.</li>{% endfor %}
+    </ol>
+    {% if can_manage %}<hr><h3 class="h6">Agregar fase</h3><form method="post" action="{{ url_for('projects.add_phase', project_id=project.id) }}">
+      {{ phase_form.hidden_tag() }}<div class="row g-2">
+        <div class="col-md-7">{{ phase_form.name(class="form-control", placeholder="Nombre de la fase") }}{% for error in phase_form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+        <div class="col-md-2">{{ phase_form.position(class="form-control", min="1", placeholder="Orden") }}</div>
+        <div class="col-md-3">{{ phase_form.submit(class="btn btn-primary w-100") }}</div>
+        <div class="col-12">{{ phase_form.description(class="form-control", rows=2, placeholder="Descripción") }}</div>
+        <div class="col-md-6"><label class="form-label small">Inicio</label>{{ phase_form.start_date(class="form-control", type="date") }}</div>
+        <div class="col-md-6"><label class="form-label small">Fin</label>{{ phase_form.end_date(class="form-control", type="date") }}</div>
+      </div>
+    </form>{% endif %}
+  </div></div></div>
+  <div class="col-lg-5"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h2 class="h5">Equipo</h2><div class="list-group list-group-flush mb-3">
+      {% for member in project.members %}<div class="list-group-item px-0 d-flex justify-content-between align-items-center"><div><div class="fw-semibold">{{ member.user.full_name }}</div><div class="small text-secondary">{{ member.user.email }} · {{ {'project_manager':'Project Manager','developer':'Desarrollador','client':'Cliente / Stakeholder'}[member.project_role] }}</div></div>{% if can_manage %}<form method="post" action="{{ url_for('projects.remove_member', project_id=project.id, member_id=member.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" aria-label="Retirar integrante">×</button></form>{% endif %}</div>
+      {% else %}<div class="text-secondary">Aún no hay integrantes asignados.</div>{% endfor %}
+    </div>
+    {% if can_manage %}<h3 class="h6">Asignar integrante</h3><form method="post" action="{{ url_for('projects.add_member', project_id=project.id) }}">
+      {{ member_form.hidden_tag() }}<div class="mb-2">{{ member_form.user_id(class="form-select") }}</div><div class="mb-2">{{ member_form.project_role(class="form-select") }}</div>{{ member_form.submit(class="btn btn-primary") }}
+    </form>{% endif %}
+  </div></div></div>
+</div>
+{% endblock %}

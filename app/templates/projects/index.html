@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Proyectos — DevProject Manager{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div><h1 class="h3 mb-1">Proyectos</h1><p class="text-secondary mb-0">Portafolio y proyectos en los que participas.</p></div>
+  {% if current_user.is_admin() %}<a class="btn btn-primary" href="{{ url_for('projects.create') }}">Nuevo proyecto</a>{% endif %}
+</div>
+<div class="row g-3">
+  {% for project in projects %}
+  <div class="col-md-6 col-xl-4"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+    <div class="d-flex justify-content-between gap-2"><h2 class="h5">{{ project.name }}</h2><span class="badge text-bg-secondary">{{ {'planning':'En planificación','active':'Activo','paused':'Pausado','finished':'Finalizado'}[project.status] }}</span></div>
+    <p class="text-secondary">{{ project.description or 'Sin descripción.' }}</p>
+    <p class="small mb-1"><strong>Periodo:</strong> {{ project.start_date.strftime('%d/%m/%Y') }} – {{ project.end_date.strftime('%d/%m/%Y') }}</p>
+    <p class="small mb-3"><strong>Presupuesto:</strong> ${{ '%.2f'|format(project.base_budget) }}</p>
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('projects.detail', project_id=project.id) }}">Abrir proyecto</a>
+  </div></div></div>
+  {% else %}<div class="col-12"><div class="card border-0"><div class="card-body text-center text-secondary py-5">Aún no tienes proyectos disponibles.</div></div></div>{% endfor %}
+</div>
+{% endblock %}
