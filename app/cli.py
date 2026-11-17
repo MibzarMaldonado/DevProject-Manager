@@ -70,3 +70,37 @@ def register_cli(app):
         selected.set_password(password)
         db.session.commit()
         click.secho("Contraseña de administrador restablecida correctamente.", fg="green")
+
+    @app.cli.command("seed-demo-users")
+    def seed_demo_users():
+        """Crea cuentas locales de desarrollador y cliente, solicitando sus contraseñas."""
+        demo_accounts = [
+            ("Desarrollador de prueba", "developer@devproject.local", "developer"),
+            ("Cliente de prueba", "client@devproject.local", "client"),
+        ]
+        existing = db.session.scalars(
+            db.select(User).where(
+                db.func.lower(User.email).in_([email for _, email, _ in demo_accounts])
+            )
+        ).all()
+        if existing:
+            emails = ", ".join(sorted(user.email for user in existing))
+            raise click.ClickException(
+                f"Ya existen cuentas de prueba ({emails}); no se modificó ningún usuario."
+            )
+
+        users = []
+        for full_name, email, role in demo_accounts:
+            password = getpass.getpass(f"Contraseña para {email} (no visible): ")
+            password_error = validate_password_strength(password)
+            if password_error:
+                raise click.ClickException(password_error)
+            if password != getpass.getpass("Confirmar contraseña (no visible): "):
+                raise click.ClickException("Las contraseñas no coinciden.")
+            user = User(full_name=full_name, email=email, role=role, is_active=True)
+            user.set_password(password)
+            users.append(user)
+
+        db.session.add_all(users)
+        db.session.commit()
+        click.secho("Cuentas locales de desarrollador y cliente creadas.", fg="green")

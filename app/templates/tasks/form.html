@@ -13,6 +13,7 @@
       <div class="row"><div class="col-md-4 mb-3"><label class="form-label">{{ form.priority.label }}</label>{{ form.priority(class="form-select") }}</div>
       <div class="col-md-4 mb-3"><label class="form-label">{{ form.status.label }}</label>{{ form.status(class="form-select") }}</div>
       <div class="col-md-4 mb-3"><label class="form-label">{{ form.planned_hours.label }}</label>{{ form.planned_hours(class="form-control", min="0", step="0.25") }}{% for error in form.planned_hours.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div></div>
+      <div class="mb-3"><label class="form-label">{{ form.hourly_rate.label }} (moneda base del proyecto)</label>{{ form.hourly_rate(class="form-control", min="0", step="0.01") }}{% for error in form.hourly_rate.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
       {{ form.submit(class="btn btn-primary") }}
     </form>
   </div></div>

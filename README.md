@@ -1,6 +1,6 @@
-# DevProject Manager — Hitos 1, 2 y 3
+# DevProject Manager — Hitos 1 a 5
 
-Aplicación web modular con Flask, SQLAlchemy, SQLite y Bootstrap para administrar usuarios y proyectos de software. Los hitos implementados incluyen autenticación y RBAC, proyectos con equipo y fases EDT, tareas vinculadas a fases, tablero Kanban, filtros y registro de horas planificadas frente a reales. Riesgos y reportes ejecutivos quedan para las entregas posteriores.
+Aplicación web modular con Flask, SQLAlchemy, SQLite y Bootstrap para administrar usuarios y proyectos de software. Incluye autenticación/RBAC, proyectos, equipo, fases EDT, tareas, tablero Kanban y estimación/registro de horas; además, matriz de riesgos, enlaces documentales, dashboard analítico y descarga de informe ejecutivo PDF.
 
 Repositorio oficial: https://github.com/MibzarMaldonado/DevProject-Manager
 
@@ -71,6 +71,14 @@ Escribe el nombre y correo solicitados. La contraseña no se muestra al introduc
 
 El comando falla sin modificar datos si ya existe un administrador. No hay credenciales administrativas predeterminadas.
 
+Para preparar las dos cuentas de evaluación restantes, ejecuta el seeder local. El comando pide ambas contraseñas de forma oculta, exige la política de seguridad y se niega a sobrescribir cuentas existentes:
+
+```powershell
+python -m flask --app run.py seed-demo-users
+```
+
+Las cuentas usan `developer@devproject.local` y `client@devproject.local`. Asigna ambas a un proyecto desde **Equipo**. Las contraseñas se definen localmente y no están guardadas en el repositorio.
+
 ## Recuperar la contraseña de un administrador
 
 Cuando `init-admin` informa que ya existe un administrador, utiliza el procedimiento de recuperación local. Antes de ejecutarlo, abre PowerShell en la carpeta del proyecto, activa el entorno y configura `SECRET_KEY` y `DATABASE_URL` exactamente con los mismos valores utilizados por la aplicación. Con el valor predeterminado, la ruta efectiva es:
@@ -114,6 +122,10 @@ Las pruebas usan una base SQLite temporal en memoria y crean sus propios datos. 
 - **Cliente / Stakeholder:** consulta los proyectos a los que fue asignado y sus tareas; no puede modificarlos.
 - El tablero permite filtrar por responsable y estado. Cada tarea compara las horas estimadas con la suma de registros reales fechados.
 - Los formularios validan estados, fechas, presupuesto, fase y responsable dentro del mismo proyecto; las operaciones POST usan protección CSRF.
+- **Hito 4:** los riesgos se clasifican y calculan con severidad `probabilidad × impacto` (1–25); la documentación se adjunta mediante enlaces HTTP/HTTPS.
+- **Hito 5:** el dashboard informa avance (`tareas concluidas / total`), horas previstas y reales, costo de horas registradas y balance (`presupuesto base - costo real`). La tarifa por hora se define en cada tarea; si no se define, su costo es cero.
+- El informe PDF reúne datos del proyecto, avance, presupuesto, riesgos y tareas. Es un resumen del estado actual, no una proyección financiera.
+- **Carga de prueba:** `seed-demo-users` crea cuentas locales para desarrollador y cliente; se asignan explícitamente al proyecto.
 
 El primer administrador se crea de forma interactiva con `init-admin`. Después, usa **Administrar usuarios** para crear cuentas de prueba de desarrollador y cliente y **Equipo** para asignarlas al proyecto. No se distribuyen contraseñas compartidas ni cuentas predeterminadas.
 
@@ -123,7 +135,7 @@ El primer administrador se crea de forma interactiva con `init-admin`. Después,
 python -m pytest -q
 ```
 
-La suite cubre autenticación y RBAC, restricciones de proyectos y fases, creación/edición/eliminación de tareas, asignaciones, cambios de estado, filtros, registro de horas y acceso de clientes.
+La suite cubre autenticación y RBAC, restricciones de proyectos y fases, tareas y asignaciones, filtros, registro de horas, permisos, severidad de riesgos, validación de enlaces, métricas y generación del PDF.
 
 ## Errores comunes
 

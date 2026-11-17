@@ -98,3 +98,52 @@ def test_init_admin_refuses_second_admin(monkeypatch):
     assert "Ya existe un administrador" in result.output
     with app.app_context():
         assert db.session.scalar(db.select(db.func.count()).select_from(User)) == 1
+
+
+def test_seed_demo_users_creates_developer_and_client(monkeypatch):
+    app = make_cli_app()
+    passwords = iter(
+        ["DeveloperDemo123!", "DeveloperDemo123!", "ClientDemo123!", "ClientDemo123!"]
+    )
+    monkeypatch.setattr("app.cli.getpass.getpass", lambda prompt: next(passwords))
+
+    result = app.test_cli_runner().invoke(args=["seed-demo-users"])
+
+    assert result.exit_code == 0
+    with app.app_context():
+        developer = db.session.scalar(
+            db.select(User).where(User.email == "developer@devproject.local")
+        )
+        client = db.session.scalar(
+            db.select(User).where(User.email == "client@devproject.local")
+        )
+        assert developer.role == "developer"
+        assert developer.check_password("DeveloperDemo123!")
+        assert client.role == "client"
+        assert client.check_password("ClientDemo123!")
+
+
+def test_seed_demo_users_does_not_replace_existing_accounts(monkeypatch):
+    app = make_cli_app()
+    with app.app_context():
+        existing = User(
+            full_name="Existing Developer",
+            email="developer@devproject.local",
+            role="developer",
+        )
+        existing.set_password("ExistingPass123!")
+        db.session.add(existing)
+        db.session.commit()
+        old_hash = existing.password_hash
+
+    monkeypatch.setattr("app.cli.getpass.getpass", lambda prompt: "unused")
+    result = app.test_cli_runner().invoke(args=["seed-demo-users"])
+
+    assert result.exit_code != 0
+    assert "no se modificó ningún usuario" in result.output
+    with app.app_context():
+        existing = db.session.scalar(
+            db.select(User).where(User.email == "developer@devproject.local")
+        )
+        assert existing.password_hash == old_hash
+        assert db.session.scalar(db.select(User).where(User.email == "client@devproject.local")) is None

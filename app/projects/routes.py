@@ -1,4 +1,8 @@
-from flask import abort, flash, redirect, render_template, url_for
+from decimal import Decimal
+from io import BytesIO
+from xml.sax.saxutils import escape
+
+from flask import abort, flash, redirect, render_template, send_file, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
@@ -7,6 +11,7 @@ from app.extensions import db
 from app.models import Phase, Project, ProjectMember, User
 from app.projects import projects_bp
 from app.projects.forms import MemberForm, PhaseForm, ProjectForm
+from app.projects.metrics import project_metrics
 
 
 def project_manager(project):
@@ -88,6 +93,144 @@ def detail(project_id):
         member_form=member_form,
         phase_form=phase_form,
         can_manage=project_manager(project),
+    )
+
+
+@projects_bp.route("/<int:project_id>/dashboard")
+@login_required
+def dashboard(project_id):
+    project = visible_project_or_404(project_id)
+    metrics = project_metrics(project)
+    return render_template(
+        "projects/dashboard.html",
+        project=project,
+        metrics=metrics,
+        status_labels={
+            "todo": "Por hacer",
+            "in_progress": "En progreso",
+            "review": "En revisión",
+            "done": "Concluidas",
+        },
+    )
+
+
+@projects_bp.route("/<int:project_id>/report.pdf")
+@login_required
+def report(project_id):
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    project = visible_project_or_404(project_id)
+    metrics = project_metrics(project)
+    buffer = BytesIO()
+    document = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=18 * mm,
+        leftMargin=18 * mm,
+        topMargin=16 * mm,
+        bottomMargin=16 * mm,
+        title=f"Resumen ejecutivo - {project.name}",
+        author="DevProject Manager",
+    )
+    styles = getSampleStyleSheet()
+    styles.add(
+        ParagraphStyle(
+            name="ReportTitle",
+            parent=styles["Title"],
+            alignment=TA_CENTER,
+            textColor=colors.HexColor("#343a8b"),
+            spaceAfter=12,
+        )
+    )
+    styles.add(ParagraphStyle(name="SmallCell", parent=styles["BodyText"], fontSize=8, leading=10))
+    story = [
+        Paragraph("Resumen ejecutivo del proyecto", styles["ReportTitle"]),
+        Paragraph(escape(project.name), styles["Heading2"]),
+        Paragraph(escape(project.description or "Sin descripción."), styles["BodyText"]),
+        Spacer(1, 8),
+    ]
+    summary = [
+        ["Estado", {"planning": "En planificación", "active": "Activo", "paused": "Pausado", "finished": "Finalizado"}[project.status]],
+        ["Periodo", f"{project.start_date:%d/%m/%Y} – {project.end_date:%d/%m/%Y}"],
+        ["Avance de tareas", f"{metrics['progress']}% ({metrics['completed_tasks']} de {metrics['task_count']})"],
+        ["Horas planificadas / reales", f"{metrics['planned_hours']:.2f} / {metrics['actual_hours']:.2f}"],
+        ["Presupuesto base", f"${project.base_budget:,.2f}"],
+        ["Costo real registrado", f"${metrics['actual_cost']:,.2f}"],
+        ["Balance presupuestal", f"${metrics['budget_balance']:,.2f}"],
+        ["Riesgos registrados", str(metrics["risk_count"])],
+    ]
+    summary_table = Table(
+        [["Indicador", "Resultado"]] + summary,
+        colWidths=[60 * mm, 110 * mm],
+        repeatRows=1,
+    )
+    summary_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#343a8b")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d5d8e2")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f6fa")]),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("PADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    story.extend([summary_table, Spacer(1, 14), Paragraph("Tareas", styles["Heading2"])])
+    task_rows = [
+        [
+            "Tarea",
+            "Fase",
+            "Responsable",
+            "Estado",
+            "Plan (h)",
+            "Real (h)",
+        ]
+    ]
+    task_status = {"todo": "Por hacer", "in_progress": "En progreso", "review": "En revisión", "done": "Concluida"}
+    for task in metrics["tasks"]:
+        actual = sum((log.hours for log in task.work_logs), Decimal("0.00"))
+        task_rows.append(
+            [
+                Paragraph(escape(task.title), styles["SmallCell"]),
+                Paragraph(escape(task.phase.name), styles["SmallCell"]),
+                Paragraph(escape(task.assignee.full_name if task.assignee else "Sin asignar"), styles["SmallCell"]),
+                task_status[task.status],
+                f"{task.planned_hours:.2f}",
+                f"{actual:.2f}",
+            ]
+        )
+    tasks_table = Table(
+        task_rows,
+        colWidths=[48 * mm, 32 * mm, 35 * mm, 24 * mm, 15 * mm, 15 * mm],
+        repeatRows=1,
+    )
+    tasks_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#343a8b")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d5d8e2")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f6fa")]),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("PADDING", (0, 0), (-1, -1), 5),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ]
+        )
+    )
+    story.append(tasks_table)
+    document.build(story)
+    buffer.seek(0)
+    return send_file(
+        buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"resumen-proyecto-{project.id}.pdf",
     )
 
 

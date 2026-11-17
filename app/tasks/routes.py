@@ -114,6 +114,7 @@ def create(project_id):
             assignee_user_id=form.assignee_user_id.data,
             planned_hours=form.planned_hours.data,
         )
+        task.hourly_rate = form.hourly_rate.data
         db.session.add(task)
         db.session.commit()
         flash("Tarea creada correctamente.", "success")

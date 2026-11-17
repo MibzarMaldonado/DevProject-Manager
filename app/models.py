@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -149,6 +150,23 @@ class Task(db.Model):
         "WorkLog", back_populates="task", cascade="all, delete-orphan",
         order_by="WorkLog.work_date, WorkLog.id",
     )
+    budget_rate = db.relationship(
+        "TaskBudgetRate",
+        back_populates="task",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def hourly_rate(self):
+        return self.budget_rate.hourly_rate if self.budget_rate else Decimal("0.00")
+
+    @hourly_rate.setter
+    def hourly_rate(self, value):
+        if self.budget_rate is None:
+            self.budget_rate = TaskBudgetRate(hourly_rate=value)
+        else:
+            self.budget_rate.hourly_rate = value
 
 
 class WorkLog(db.Model):
@@ -170,6 +188,91 @@ class WorkLog(db.Model):
 
     task = db.relationship("Task", back_populates="work_logs")
     user = db.relationship("User")
+
+
+class TaskBudgetRate(db.Model):
+    __tablename__ = "task_budget_rates"
+
+    task_id = db.Column(
+        db.Integer, db.ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True
+    )
+    hourly_rate = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+
+    __table_args__ = (
+        db.CheckConstraint("hourly_rate >= 0", name="nonnegative_task_hourly_rate"),
+    )
+
+    task = db.relationship("Task", back_populates="budget_rate")
+
+
+class Risk(db.Model):
+    __tablename__ = "risks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(
+        db.Integer, db.ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    title = db.Column(db.String(180), nullable=False)
+    description = db.Column(db.Text, nullable=False, default="")
+    category = db.Column(db.String(20), nullable=False)
+    probability = db.Column(db.Integer, nullable=False)
+    impact = db.Column(db.Integer, nullable=False)
+    mitigation = db.Column(db.Text, nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (
+        db.CheckConstraint(
+            "category IN ('technical', 'financial', 'personnel', 'schedule', 'other')",
+            name="valid_risk_category",
+        ),
+        db.CheckConstraint("probability BETWEEN 1 AND 5", name="valid_risk_probability"),
+        db.CheckConstraint("impact BETWEEN 1 AND 5", name="valid_risk_impact"),
+    )
+
+    project = db.relationship("Project")
+
+    @property
+    def severity(self):
+        return self.probability * self.impact
+
+    @property
+    def severity_label(self):
+        if self.severity >= 17:
+            return "Crítico"
+        if self.severity >= 10:
+            return "Alto"
+        if self.severity >= 5:
+            return "Medio"
+        return "Bajo"
+
+
+class ProjectDocument(db.Model):
+    __tablename__ = "project_documents"
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(
+        db.Integer, db.ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    added_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    title = db.Column(db.String(160), nullable=False)
+    document_type = db.Column(db.String(20), nullable=False)
+    url = db.Column(db.String(2048), nullable=False)
+    description = db.Column(db.String(500), nullable=False, default="")
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (
+        db.CheckConstraint(
+            "document_type IN ('architecture', 'minutes', 'other')",
+            name="valid_project_document_type",
+        ),
+    )
+
+    project = db.relationship("Project")
+    added_by = db.relationship("User")
 
 
 @login_manager.user_loader

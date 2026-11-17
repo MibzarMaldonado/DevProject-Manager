@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Riesgos — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4"><div><a class="small text-decoration-none" href="{{ url_for('projects.detail', project_id=project.id) }}">← {{ project.name }}</a><h1 class="h3 mt-2 mb-1">Riesgos y documentación</h1><p class="text-secondary mb-0">Severidad = probabilidad × impacto (escala de 1 a 5).</p></div></div>
+<div class="row g-4">
+  <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h2 class="h5">Matriz de riesgos</h2><div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Riesgo</th><th>Clasificación</th><th>Prob.</th><th>Impacto</th><th>Severidad</th><th>Mitigación / contingencia</th><th></th></tr></thead><tbody>
+      {% for risk in risks %}<tr><td><strong>{{ risk.title }}</strong><div class="small text-secondary">{{ risk.description }}</div></td><td>{{ {'technical':'Técnico','financial':'Financiero','personnel':'Personal','schedule':'Cronograma','other':'Otro'}[risk.category] }}</td><td>{{ risk.probability }}</td><td>{{ risk.impact }}</td><td><span class="badge {{ {'Bajo':'text-bg-success','Medio':'text-bg-primary','Alto':'text-bg-warning','Crítico':'text-bg-danger'}[risk.severity_label] }}">{{ risk.severity }} · {{ risk.severity_label }}</span></td><td>{{ risk.mitigation }}</td><td>{% if can_manage %}<div class="d-flex gap-1"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('risks.edit_risk', project_id=project.id, risk_id=risk.id) }}">Editar</a><form method="post" action="{{ url_for('risks.delete_risk', project_id=project.id, risk_id=risk.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Eliminar</button></form></div>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="7" class="text-secondary text-center">No hay riesgos registrados.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div></div></div>
+  {% if can_manage %}<div class="col-lg-6"><div class="card border-0 shadow-sm"><div class="card-body"><h2 class="h5">Registrar riesgo</h2><form method="post" action="{{ url_for('risks.create_risk', project_id=project.id) }}">
+    {{ risk_form.hidden_tag() }}
+    <div class="mb-2"><label class="form-label">{{ risk_form.title.label }}</label>{{ risk_form.title(class="form-control") }}</div>
+    <div class="mb-2"><label class="form-label">{{ risk_form.description.label }}</label>{{ risk_form.description(class="form-control", rows=2) }}</div>
+    <div class="row"><div class="col-md-4 mb-2"><label class="form-label">{{ risk_form.category.label }}</label>{{ risk_form.category(class="form-select") }}</div><div class="col-md-4 mb-2"><label class="form-label">{{ risk_form.probability.label }}</label>{{ risk_form.probability(class="form-control", min="1", max="5") }}</div><div class="col-md-4 mb-2"><label class="form-label">{{ risk_form.impact.label }}</label>{{ risk_form.impact(class="form-control", min="1", max="5") }}</div></div>
+    <div class="mb-3"><label class="form-label">{{ risk_form.mitigation.label }}</label>{{ risk_form.mitigation(class="form-control", rows=3) }}</div>{{ risk_form.submit(class="btn btn-primary") }}
+  </form></div></div></div>{% endif %}
+  <div class="col-lg-6"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+    <h2 class="h5">Documentación enlazada</h2><ul class="list-group list-group-flush mb-3">
+      {% for document in documents %}<li class="list-group-item px-0 d-flex justify-content-between gap-3"><div><a href="{{ document.url }}" target="_blank" rel="noopener noreferrer">{{ document.title }}</a><div class="small text-secondary">{{ {'architecture':'Arquitectura','minutes':'Acta / minuta','other':'Otro'}[document.document_type] }} · {{ document.added_by.full_name }}{% if document.description %} · {{ document.description }}{% endif %}</div></div>{% if can_manage %}<form method="post" action="{{ url_for('risks.delete_document', project_id=project.id, document_id=document.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Quitar</button></form>{% endif %}</li>
+      {% else %}<li class="list-group-item px-0 text-secondary">No hay enlaces agregados.</li>{% endfor %}
+    </ul>
+    {% if can_manage %}<hr><h3 class="h6">Adjuntar un enlace</h3><form method="post" action="{{ url_for('risks.add_document', project_id=project.id) }}">
+      {{ document_form.hidden_tag() }}<div class="mb-2">{{ document_form.title(class="form-control", placeholder="Nombre del documento") }}</div>
+      <div class="row g-2"><div class="col-md-5">{{ document_form.document_type(class="form-select") }}</div><div class="col-md-7">{{ document_form.url(class="form-control", placeholder="https://...") }}</div></div>
+      <div class="my-2">{{ document_form.description(class="form-control", placeholder="Descripción opcional") }}</div>{{ document_form.submit(class="btn btn-outline-primary") }}
+    </form>{% endif %}
+  </div></div></div>
+</div>
+{% endblock %}

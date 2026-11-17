@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div><a class="small text-decoration-none" href="{{ url_for('projects.detail', project_id=project.id) }}">← {{ project.name }}</a><h1 class="h3 mt-2 mb-1">Dashboard de seguimiento</h1><p class="text-secondary mb-0">Avance, esfuerzo registrado y balance presupuestal.</p></div>
+  <div class="d-flex gap-2"><a class="btn btn-outline-secondary" href="{{ url_for('risks.index', project_id=project.id) }}">Ver riesgos</a><a class="btn btn-primary" href="{{ url_for('projects.report', project_id=project.id) }}">Descargar informe PDF</a></div>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="small text-secondary">Avance de tareas</div><div class="display-6 fw-semibold">{{ metrics.progress }}%</div><div class="progress mt-2" role="progressbar" aria-label="Avance de tareas" aria-valuenow="{{ metrics.progress }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {{ metrics.progress }}%"></div></div><div class="small text-secondary mt-2">{{ metrics.completed_tasks }} de {{ metrics.task_count }} tareas concluidas</div></div></div></div>
+  <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="small text-secondary">Horas planificadas</div><div class="display-6 fw-semibold">{{ '%.2f'|format(metrics.planned_hours) }}</div><div class="small text-secondary mt-2">Horas reales: {{ '%.2f'|format(metrics.actual_hours) }}</div></div></div></div>
+  <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="small text-secondary">Presupuesto base</div><div class="display-6 fw-semibold">${{ '%.2f'|format(project.base_budget) }}</div><div class="small text-secondary mt-2">Costo real: ${{ '%.2f'|format(metrics.actual_cost) }}</div></div></div></div>
+  <div class="col-md-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="small text-secondary">Balance presupuestal</div><div class="display-6 fw-semibold {{ 'text-danger' if metrics.budget_balance < 0 else 'text-success' }}">${{ '%.2f'|format(metrics.budget_balance) }}</div><div class="small text-secondary mt-2">{{ metrics.risk_count }} riesgos registrados</div></div></div></div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-7"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h2 class="h5">Estado de tareas</h2>
+    {% for status, label in status_labels.items() %}<div class="d-flex align-items-center gap-3 mb-3"><div class="small" style="width: 110px">{{ label }}</div><div class="progress flex-grow-1" role="progressbar" aria-label="{{ label }}" aria-valuenow="{{ metrics.status_counts[status] }}" aria-valuemin="0" aria-valuemax="{{ metrics.task_count }}"><div class="progress-bar {{ 'bg-success' if status == 'done' else '' }}" style="width: {{ (metrics.status_counts[status] * 100 / metrics.task_count) if metrics.task_count else 0 }}%"></div></div><span class="small text-secondary">{{ metrics.status_counts[status] }}</span></div>{% endfor %}
+  </div></div></div>
+  <div class="col-lg-5"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h2 class="h5">Control presupuestal</h2><p class="mb-1">Base asignada <strong class="float-end">${{ '%.2f'|format(project.base_budget) }}</strong></p><p class="mb-1">Costo de horas registradas <strong class="float-end">${{ '%.2f'|format(metrics.actual_cost) }}</strong></p><hr><p class="mb-0">Saldo disponible <strong class="float-end {{ 'text-danger' if metrics.budget_balance < 0 else 'text-success' }}">${{ '%.2f'|format(metrics.budget_balance) }}</strong></p>
+    <p class="small text-secondary mt-3 mb-0">El costo real se calcula como horas registradas × tarifa horaria de cada tarea.</p>
+  </div></div></div>
+</div>
+{% endblock %}

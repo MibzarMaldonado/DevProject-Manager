@@ -28,6 +28,7 @@ def project_with_task(client, admin, make_user):
             "priority": "high",
             "assignee_user_id": developer.id,
             "planned_hours": "12.5",
+            "hourly_rate": "40",
             "status": "todo",
         },
     )
@@ -54,6 +55,7 @@ def test_task_crud_and_phase_assignment(client, admin, make_user):
             "priority": "urgent",
             "assignee_user_id": developer.id,
             "planned_hours": "14",
+            "hourly_rate": "60",
             "status": "in_progress",
         },
     )
@@ -175,6 +177,7 @@ def test_task_rejects_phase_from_another_project(client, admin, make_user):
             "priority": "low",
             "assignee_user_id": developer.id,
             "planned_hours": "1",
+            "hourly_rate": "0",
             "status": "todo",
         },
     )

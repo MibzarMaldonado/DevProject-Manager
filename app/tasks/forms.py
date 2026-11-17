@@ -21,6 +21,9 @@ class TaskForm(FlaskForm):
     planned_hours = DecimalField(
         "Horas planificadas", places=2, validators=[DataRequired(), NumberRange(min=0)]
     )
+    hourly_rate = DecimalField(
+        "Costo por hora", places=2, validators=[DataRequired(), NumberRange(min=0)], default=0
+    )
     status = SelectField(
         "Estado",
         choices=[
