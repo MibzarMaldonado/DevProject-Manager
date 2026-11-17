@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}{{ task.title }} — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div><a class="small text-decoration-none" href="{{ url_for('tasks.board', project_id=project.id) }}">← Tablero</a><h1 class="h3 mt-2 mb-1">{{ task.title }}</h1><p class="text-secondary mb-0">{{ project.name }} · {{ task.phase.name }}</p></div>
+  {% if can_manage %}<div class="d-flex gap-2"><a class="btn btn-outline-primary" href="{{ url_for('tasks.edit', project_id=project.id, task_id=task.id) }}">Editar</a><form method="post" action="{{ url_for('tasks.delete', project_id=project.id, task_id=task.id) }}" onsubmit="return confirm('¿Eliminar esta tarea y sus registros de horas?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-danger">Eliminar</button></form></div>{% endif %}
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-lg-7"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h2 class="h5">Descripción</h2><p class="mb-0">{{ task.description or 'Sin descripción.' }}</p></div></div></div>
+  <div class="col-lg-5"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+    <h2 class="h5">Seguimiento</h2><p class="mb-1"><strong>Prioridad:</strong> {{ priority_labels[task.priority] }}</p><p class="mb-1"><strong>Responsable:</strong> {{ task.assignee.full_name if task.assignee else 'Sin asignar' }}</p><p class="mb-1"><strong>Estado:</strong> {{ status_labels[task.status] }}</p><p class="mb-1"><strong>Horas planificadas:</strong> {{ '%.2f'|format(task.planned_hours) }} h</p><p class="mb-3"><strong>Horas reales:</strong> {{ '%.2f'|format(logged_hours) }} h</p>
+    {% if can_update %}<form method="post" action="{{ url_for('tasks.update_status', project_id=project.id, task_id=task.id) }}" class="d-flex gap-2">{{ status_form.hidden_tag() }}{{ status_form.status(class="form-select") }}{{ status_form.submit(class="btn btn-outline-primary") }}</form>{% endif %}
+  </div></div></div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-7"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h2 class="h5">Registro de horas reales</h2>
+    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Integrante</th><th>Horas</th><th>Nota</th><th></th></tr></thead><tbody>
+      {% for entry in task.work_logs %}<tr><td>{{ entry.work_date.strftime('%d/%m/%Y') }}</td><td>{{ entry.user.full_name }}</td><td>{{ '%.2f'|format(entry.hours) }}</td><td>{{ entry.notes or '—' }}</td><td>{% if entry.user_id == current_user.id or can_manage %}<form method="post" action="{{ url_for('tasks.delete_work_log', project_id=project.id, task_id=task.id, log_id=entry.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Eliminar</button></form>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="5" class="text-secondary text-center">Aún no se registran horas.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div></div></div>
+  <div class="col-lg-5"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h2 class="h5">Registrar tiempo invertido</h2>
+    {% if can_update %}<form method="post" action="{{ url_for('tasks.add_work_log', project_id=project.id, task_id=task.id) }}">
+      {{ form.hidden_tag() }}
+      <div class="mb-3"><label class="form-label">{{ form.hours.label }}</label>{{ form.hours(class="form-control", min="0.01", step="0.25") }}{% for error in form.hours.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+      <div class="mb-3"><label class="form-label">{{ form.work_date.label }}</label>{{ form.work_date(class="form-control", type="date") }}{% for error in form.work_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+      <div class="mb-3"><label class="form-label">{{ form.notes.label }}</label>{{ form.notes(class="form-control", maxlength="500") }}</div>
+      {{ form.submit(class="btn btn-primary") }}
+    </form>{% else %}<p class="text-secondary mb-0">Solo el responsable de la tarea o el Project Manager puede registrar horas.</p>{% endif %}
+  </div></div></div>
+</div>
+{% endblock %}

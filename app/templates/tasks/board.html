@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Tareas — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div><a class="small text-decoration-none" href="{{ url_for('projects.detail', project_id=project.id) }}">← {{ project.name }}</a><h1 class="h3 mt-2 mb-1">Tablero de tareas</h1><p class="text-secondary mb-0">Seguimiento de responsables, prioridad y horas registradas.</p></div>
+  {% if can_manage and project.phases and members %}<a class="btn btn-primary" href="{{ url_for('tasks.create', project_id=project.id) }}">Nueva tarea</a>{% endif %}
+</div>
+<form method="get" class="row g-2 align-items-end mb-4">
+  <div class="col-sm-4"><label class="form-label" for="status">Estado</label><select class="form-select" id="status" name="status"><option value="">Todos</option>{% for key, label in status_labels.items() %}<option value="{{ key }}" {{ 'selected' if selected_status == key else '' }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-sm-5"><label class="form-label" for="assignee">Responsable</label><select class="form-select" id="assignee" name="assignee"><option value="">Todos</option>{% for member in members if member.project_role in ['developer', 'project_manager'] %}<option value="{{ member.user_id }}" {{ 'selected' if selected_assignee == member.user_id|string else '' }}>{{ member.user.full_name }}</option>{% endfor %}</select></div>
+  <div class="col-sm-3 d-flex gap-2"><button class="btn btn-outline-primary">Filtrar</button><a class="btn btn-outline-secondary" href="{{ url_for('tasks.board', project_id=project.id) }}">Limpiar</a></div>
+</form>
+<div class="row g-3">
+  {% for status, label in status_labels.items() %}
+  <div class="col-md-6 col-xl-3"><section class="kanban-column h-100">
+    <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h6 mb-0">{{ label }}</h2><span class="badge rounded-pill text-bg-secondary">{{ tasks|selectattr('status', 'equalto', status)|list|length }}</span></div>
+    {% for task in tasks if task.status == status %}
+    <article class="card border-0 shadow-sm mb-3"><div class="card-body">
+      <div class="d-flex justify-content-between gap-2"><span class="badge {{ {'low':'text-bg-success','medium':'text-bg-primary','high':'text-bg-warning','urgent':'text-bg-danger'}[task.priority] }}">{{ priority_labels[task.priority] }}</span>{% if can_manage %}<a class="small" href="{{ url_for('tasks.edit', project_id=project.id, task_id=task.id) }}">Editar</a>{% endif %}</div>
+      <h3 class="h6 mt-2"><a class="text-decoration-none" href="{{ url_for('tasks.detail', project_id=project.id, task_id=task.id) }}">{{ task.title }}</a></h3>
+      <p class="small text-secondary mb-2">{{ task.phase.name }} · {{ task.assignee.full_name if task.assignee else 'Sin asignar' }}</p>
+      <p class="small mb-2">{{ '%.2f'|format(task.planned_hours) }} h estimadas / {{ '%.2f'|format(logged_hours[task.id]) }} h reales</p>
+      {% if task.assignee_user_id == current_user.id or can_manage %}<form method="post" action="{{ url_for('tasks.update_status', project_id=project.id, task_id=task.id) }}" class="d-flex gap-2">
+        {{ status_form.hidden_tag() }}<select class="form-select form-select-sm" name="status" aria-label="Cambiar estado">{% for key, state_label in status_labels.items() %}<option value="{{ key }}" {{ 'selected' if task.status == key else '' }}>{{ state_label }}</option>{% endfor %}</select><button class="btn btn-sm btn-outline-primary">Guardar</button>
+      </form>{% endif %}
+    </div></article>
+    {% else %}<div class="small text-secondary">No hay tareas en este estado.</div>{% endfor %}
+  </section></div>
+  {% endfor %}
+</div>
+{% endblock %}

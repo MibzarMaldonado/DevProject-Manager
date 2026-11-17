@@ -3,3 +3,5 @@ body { min-height: 100vh; }
 .login-shell { min-height: 75vh; }
 .card { border-radius: .85rem; }
 .table td, .table th { white-space: nowrap; }
+.kanban-column { background: #f0f2f7; border-radius: .85rem; min-height: 18rem; padding: 1rem; }
+.kanban-column .card { border-radius: .65rem; }

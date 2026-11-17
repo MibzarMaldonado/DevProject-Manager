@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ heading }} — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-8">
+  <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3">{{ heading }}</h1><a class="btn btn-outline-secondary" href="{{ url_for('tasks.board', project_id=project.id) }}">Volver al tablero</a></div>
+  <div class="card border-0 shadow-sm"><div class="card-body p-4">
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="mb-3"><label class="form-label">{{ form.title.label }}</label>{{ form.title(class="form-control") }}{% for error in form.title.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+      <div class="mb-3"><label class="form-label">{{ form.description.label }}</label>{{ form.description(class="form-control", rows=3) }}</div>
+      <div class="row"><div class="col-md-6 mb-3"><label class="form-label">{{ form.phase_id.label }}</label>{{ form.phase_id(class="form-select") }}{% for error in form.phase_id.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+      <div class="col-md-6 mb-3"><label class="form-label">{{ form.assignee_user_id.label }}</label>{{ form.assignee_user_id(class="form-select") }}{% for error in form.assignee_user_id.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div></div>
+      <div class="row"><div class="col-md-4 mb-3"><label class="form-label">{{ form.priority.label }}</label>{{ form.priority(class="form-select") }}</div>
+      <div class="col-md-4 mb-3"><label class="form-label">{{ form.status.label }}</label>{{ form.status(class="form-select") }}</div>
+      <div class="col-md-4 mb-3"><label class="form-label">{{ form.planned_hours.label }}</label>{{ form.planned_hours(class="form-control", min="0", step="0.25") }}{% for error in form.planned_hours.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div></div>
+      {{ form.submit(class="btn btn-primary") }}
+    </form>
+  </div></div>
+</div></div>
+{% endblock %}

@@ -114,6 +114,26 @@ def test_project_membership_is_required_to_view_project(client, admin, make_user
     assert client.get(f"/projects/{project.id}").status_code == 404
 
 
+def test_client_account_cannot_be_assigned_project_manager(client, admin, make_user):
+    project = create_project(client, admin)
+    stakeholder = make_user(email="stakeholder@example.com", role="client")
+    token = csrf_token(client, f"/projects/{project.id}")
+    response = client.post(
+        f"/projects/{project.id}/members",
+        data={
+            "csrf_token": token,
+            "user_id": stakeholder.id,
+            "project_role": "project_manager",
+        },
+    )
+    assert response.status_code == 302
+    assert db.session.scalar(
+        db.select(ProjectMember).where(
+            ProjectMember.project_id == project.id, ProjectMember.user_id == stakeholder.id
+        )
+    ) is None
+
+
 def test_project_team_assignment_uses_unique_members(client, app, admin, make_user):
     project = create_project(client, admin)
     developer = make_user(email="developer@example.com")

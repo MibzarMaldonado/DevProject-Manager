@@ -12,7 +12,7 @@ from app.projects.forms import MemberForm, PhaseForm, ProjectForm
 def project_manager(project):
     if current_user.is_admin():
         return True
-    return any(
+    return current_user.role != "client" and any(
         member.user_id == current_user.id and member.project_role == "project_manager"
         for member in project.members
     )
@@ -136,6 +136,12 @@ def add_member(project_id):
         (user.id, user.full_name) for user in eligible_users if user.id not in existing_ids
     ]
     if form.validate_on_submit():
+        assigned_user = db.session.get(User, form.user_id.data)
+        if assigned_user is None or (
+            assigned_user.role == "client" and form.project_role.data != "client"
+        ):
+            flash("El perfil Cliente solo puede asignarse como Cliente / Stakeholder.", "danger")
+            return redirect(url_for("projects.detail", project_id=project.id))
         member = ProjectMember(
             project_id=project.id, user_id=form.user_id.data, project_role=form.project_role.data
         )

@@ -109,6 +109,67 @@ class Phase(db.Model):
     )
 
     project = db.relationship("Project", back_populates="phases")
+    tasks = db.relationship("Task", back_populates="phase", cascade="all, delete-orphan")
+
+
+class Task(db.Model):
+    __tablename__ = "tasks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(
+        db.Integer, db.ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    phase_id = db.Column(
+        db.Integer, db.ForeignKey("phases.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    assignee_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
+    title = db.Column(db.String(180), nullable=False)
+    description = db.Column(db.Text, nullable=False, default="")
+    priority = db.Column(db.String(12), nullable=False, default="medium")
+    status = db.Column(db.String(16), nullable=False, default="todo")
+    planned_hours = db.Column(db.Numeric(8, 2), nullable=False, default=0)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (
+        db.CheckConstraint(
+            "priority IN ('low', 'medium', 'high', 'urgent')", name="valid_task_priority"
+        ),
+        db.CheckConstraint(
+            "status IN ('todo', 'in_progress', 'review', 'done')", name="valid_task_status"
+        ),
+        db.CheckConstraint("planned_hours >= 0", name="nonnegative_planned_hours"),
+    )
+
+    project = db.relationship("Project")
+    phase = db.relationship("Phase", back_populates="tasks")
+    assignee = db.relationship("User")
+    work_logs = db.relationship(
+        "WorkLog", back_populates="task", cascade="all, delete-orphan",
+        order_by="WorkLog.work_date, WorkLog.id",
+    )
+
+
+class WorkLog(db.Model):
+    __tablename__ = "work_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(
+        db.Integer, db.ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    hours = db.Column(db.Numeric(7, 2), nullable=False)
+    work_date = db.Column(db.Date, nullable=False)
+    notes = db.Column(db.String(500), nullable=False, default="")
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (db.CheckConstraint("hours > 0", name="positive_logged_hours"),)
+
+    task = db.relationship("Task", back_populates="work_logs")
+    user = db.relationship("User")
 
 
 @login_manager.user_loader

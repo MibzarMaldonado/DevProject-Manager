@@ -1,6 +1,8 @@
-# DevProject Manager — primera entrega
+# DevProject Manager — Hitos 1, 2 y 3
 
-Aplicación web modular con Flask para autenticación y administración segura de usuarios. Esta entrega no incluye todavía proyectos, fases, tareas, riesgos ni reportes.
+Aplicación web modular con Flask, SQLAlchemy, SQLite y Bootstrap para administrar usuarios y proyectos de software. Los hitos implementados incluyen autenticación y RBAC, proyectos con equipo y fases EDT, tareas vinculadas a fases, tablero Kanban, filtros y registro de horas planificadas frente a reales. Riesgos y reportes ejecutivos quedan para las entregas posteriores.
+
+Repositorio oficial: https://github.com/MibzarMaldonado/DevProject-Manager
 
 ## Requisitos previos
 
@@ -13,7 +15,7 @@ Aplicación web modular con Flask para autenticación y administración segura d
 
 ```powershell
 cd "d:\ruta\de\trabajo"
-git clone <URL_DEL_REPOSITORIO> DevProject-Manager
+git clone https://github.com/MibzarMaldonado/DevProject-Manager.git DevProject-Manager
 cd DevProject-Manager
 ```
 
@@ -104,16 +106,24 @@ python -m pytest -q
 
 Las pruebas usan una base SQLite temporal en memoria y crean sus propios datos. No dependen de una cuenta real ni de `instance/devproject.db`.
 
+## Funcionalidades y permisos
+
+- **Administrador:** gestiona usuarios, proyectos, equipo, fases y todas las tareas.
+- **Project Manager del proyecto:** administra el proyecto, sus integrantes, fases y tareas.
+- **Desarrollador asignado:** consulta su proyecto, actualiza el estado de sus tareas y registra o elimina sus propios registros de tiempo.
+- **Cliente / Stakeholder:** consulta los proyectos a los que fue asignado y sus tareas; no puede modificarlos.
+- El tablero permite filtrar por responsable y estado. Cada tarea compara las horas estimadas con la suma de registros reales fechados.
+- Los formularios validan estados, fechas, presupuesto, fase y responsable dentro del mismo proyecto; las operaciones POST usan protección CSRF.
+
+El primer administrador se crea de forma interactiva con `init-admin`. Después, usa **Administrar usuarios** para crear cuentas de prueba de desarrollador y cliente y **Equipo** para asignarlas al proyecto. No se distribuyen contraseñas compartidas ni cuentas predeterminadas.
+
 ## Comprobaciones incluidas
 
-- Página de login y acceso privado.
-- Login correcto e incorrecto.
-- Bloqueo de usuarios inactivos.
-- Invalidación de sesión al cerrar sesión.
-- Acceso y creación de usuarios por administradores.
-- Correos duplicados y contraseñas débiles.
-- Restricción por rol y protección CSRF.
-- Almacenamiento mediante hash de contraseña.
+```powershell
+python -m pytest -q
+```
+
+La suite cubre autenticación y RBAC, restricciones de proyectos y fases, creación/edición/eliminación de tareas, asignaciones, cambios de estado, filtros, registro de horas y acceso de clientes.
 
 ## Errores comunes
 
@@ -147,32 +157,15 @@ git diff --cached --stat
 git commit -m "Implementar autenticación y administración de usuarios"
 ```
 
-No se crea un commit ni se hace push automáticamente. Antes de un push, conserva el remoto configurado y revisa `git remote -v`.
-
-## Preparar y publicar en GitHub
-
-Después de revisar el resultado localmente, inicia Git si la carpeta todavía no es un repositorio:
+El repositorio oficial ya tiene configurado el remoto `origin`. Revisa los cambios y publícalos desde la rama principal:
 
 ```powershell
-git init
-git add .
 git status
-git diff --cached --stat
-```
-
-Después de comprobar que `.env`, `.venv`, `instance/` y las bases SQLite no aparecen en `git status`, crea el primer commit:
-
-```powershell
-git add README.md REQUERIMIENTOS.txt requirements.txt .gitignore .env.example app tests run.py
-git commit -m "Implementar autenticación y administración de usuarios"
-```
-
-En GitHub crea un repositorio público vacío sin inicializarlo con README. Luego conecta el remoto y publica solo cuando hayas decidido la rama y revisado el contenido:
-
-```powershell
-git branch -M main
-git remote add origin https://github.com/<USUARIO>/<REPOSITORIO>.git
+git diff --check
+git log -5 --oneline
+git add README.md app tests
+git commit -m "Describir el avance implementado"
 git push -u origin main
 ```
 
-Este proyecto no incluye automáticamente el repositorio remoto ni realiza el push. Antes de subirlo, usa `git log --stat --oneline -1` y `git remote -v`; nunca publiques `.env`, claves reales ni archivos `.db` locales.
+No publiques `.env`, claves reales ni bases SQLite locales. El historial y los commits publicados se consultan en el enlace del repositorio oficial.
